@@ -1,10 +1,10 @@
 #!/bin/bash
 
 ### USAGE ####
-# ./deploy/deploy_glue.sh <glue_job> -stage <stage> -sync
+# ./deploy/deploy_python_shell.sh <python_shell_job> -stage <stage> -sync
 ## Arguments
-### glue_job  mandatory
-###     glue job name if selective python shell job should be deployed
+### python_shell_job  mandatory
+###     python shell job name if selective python shell job should be deployed
 ### -stage  mandatory
 ###     To define stage
 ### stage required with -stage
@@ -13,19 +13,8 @@
 ### sync  optional
 ###     if specified, only files will be uploaded to s3 and CF will not be deployed/updated.
 
-# # Specify bucket in which you wish to upload zip and .py files
-# build_bucket='<specify build artifacts bucket>'
-# # Project prefix. 
-# project="bp"
-# # Default Stage
-# stage="dev"
-# # AWS profile to be used in AWS CLI
-# aws_profile="default"
-# # ARN of Glue Role to be used in Glue operation.
-# glue_role_arn='<specify Glue Role ARN>'
-
-# Specify bucket in which you wish to upload zip and .py files
-build_bucket='sandeep-rnd'
+# Specify bucket in which you wish to upload .egg and .py files
+build_bucket='<specify build artifacts bucket>'
 # Project prefix. 
 project="bp"
 # Default Stage
@@ -33,9 +22,7 @@ stage="dev"
 # AWS profile to be used in AWS CLI
 aws_profile="default"
 # ARN of Glue Role to be used in Glue operation.
-glue_role_arn='arn:aws:iam::160699259667:role/AVA_GLUE_ROLE'
-
-
+glue_role_arn='<specify Glue Role ARN>'
 # Egg package version
 egg_package_version=0.1
 # Python version used to make egg file
@@ -44,7 +31,7 @@ python_version=`python -c "import sys;t='{v[0]}.{v[1]}'.format(v=list(sys.versio
 python_shell=""
 if [ "$1" == "" ] 
 then
-  echo 'Provide glue job name or "all" as first argument'
+  echo 'Provide glue job name as first argument'
 else
   python_shell=$1_ps.py
 fi
@@ -71,17 +58,15 @@ fi
 
 if [ ! -d "dist" ]
 then
-  echo "creating dist directory ..."
+  printf "\nCreating dist directory ...\n"
   mkdir -p dist
 fi
 
 path=`pwd`
 
-printf "\ncreating .egg file and then moving to dist ...\n"
+printf "\nCreating .egg file and then moving to dist ...\n"
 for f in */python_shell/src/$python_shell; do
-  echo 'copying python_shell files to dist'
   dest=$(dirname "${f}")
-  echo ${f%src*}
   mkdir -p dist/$dest
   cp $f dist/$dest/.
 
@@ -98,13 +83,13 @@ for f in */python_shell/src/$python_shell; do
   cd $path
 
   printf "\nSyncing repo with S3 code bucket ...\n"
-  # aws s3 sync dist s3://$build_bucket/$stage/dist --delete --profile $aws_profile
+  aws s3 sync dist s3://$build_bucket/$stage/dist --delete --profile $aws_profile
 
   if [ "$sync_only" = false ]
   then
     cf_folder=${f%/src*}
     cf="cf/${cf_folder}/${python_shell_name}_job.json"
-    printf "\ndeploying $python_shell_name job using $cf CF template ...\n"
+    printf "\nDeploying $python_shell_name job using $cf CF template ...\n"
     stackname="${python_shell_name//_/-}-$stage"
     aws cloudformation deploy --template-file $cf --stack-name $stackname --parameter-overrides ProjectName=$project BuildBucket=$build_bucket BuildFolder=$stage/dist\
      Stage=$stage GlueRoleARN=$glue_role_arn EggPackageVersion=$egg_package_version PythonVersion=$python_version \

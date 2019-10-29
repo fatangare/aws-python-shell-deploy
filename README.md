@@ -62,7 +62,7 @@ egg_package_version=<Egg Package version. Default: 0.1>
 ## Usage
 
 ### To Deploy: ./deploy/deploy_python_shell.sh <python_shell_job> -stage <stage>
-### To Sync S3: ./deploy/deploy_python_shell.sh <python_shell_job> -stage <stage> -sync
+### To Sync S3 only: ./deploy/deploy_python_shell.sh <python_shell_job> -stage <stage> -sync
 
 ## Arguments
 
