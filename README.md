@@ -85,7 +85,7 @@ egg_package_version=<Egg Package version. Default: 0.1>
 
 > Always run script from project root folder instead of from *deploy* folder.
 
-> If Python shell job is already deployed through Cloudformation and you wish to only sync Python shell  source code with S3 bucket, omit -cf. It will sync S3 but will not attempt to update CF.
+> If Python shell job is already deployed through Cloudformation and you wish to only sync Python shell  source code with S3 bucket, add -sync parameter. It will sync S3 but will not attempt to update CF.
 
 ### Example
 
