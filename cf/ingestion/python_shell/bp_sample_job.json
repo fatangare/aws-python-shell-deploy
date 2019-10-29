@@ -1,0 +1,149 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "bp_sample glue job template - /cf/bp_sample_job.json",
+  "Parameters": {
+    "GlueJobName": {
+      "Type": "String",
+      "Default": "sample",
+      "Description": "ToDo: Name of the Glue job"
+    },
+    "GlueJobDescription": {
+      "Type": "String",
+      "Default": "Sample Glue Job ",
+      "Description": "ToDo: Description of the Glue job"
+    },
+    "GlueJobScriptRelativePath": {
+      "Type": "String",
+      "Default": "ingestion/python_shell/src",
+      "Description": "ToDo: Glue script root folder's  relative path"
+    },
+    "EggPackageVersion": {
+      "Type": "String",
+      "Default": "0.1",
+      "Description": "ToDo: Egg package version"
+    },
+    "PythonVersion": {
+      "Type": "String",
+      "Default": "3.6",
+      "Description": "ToDo: Python version used to make egg file"
+    },
+    "ProjectName": {
+      "Type": "String",
+      "Description": "The project name. It is passed by parent stack",
+      "Default": ""
+    },
+    "BuildBucket": {
+      "Type": "String",
+      "Description": "Source code build bucket. It is passed by parent stack",
+      "Default": ""
+    },
+    "BuildFolder": {
+      "Type": "String",
+      "Default": "",
+      "Description": "Current build for source code, ==$BUILD_TAG. It is passed by parent stack"
+    },
+    "Stage": {
+      "Type": "String",
+      "Default": "",
+      "Description": "the stage e.g. prod, qa, dev, {developer}. It is passed by parent stack"
+    },
+    "GlueRoleARN": {
+      "Type": "String",
+      "Default": "",
+      "Description": "The glue role ARN. It is passed by parent stack"
+    }
+  },
+  "Resources": {
+    "BpSampleJob": {
+      "Type": "AWS::Glue::Job",
+      "Properties": {
+        "Description": {
+          "Ref": "GlueJobDescription"
+        },
+        "Command": {
+          "Name": "pythonshell",
+          "PythonVersion": { "Fn::Select" : [ "0", { "Fn::Split" : [ "." , { "Ref": "PythonVersion" }] } ]},
+          "ScriptLocation": {
+            "Fn::Join": [
+              "",
+              [ 
+                "s3://",
+                {
+                  "Ref": "BuildBucket"
+                },
+                "/",
+                { "Ref": "BuildFolder"},
+                "/",
+                { "Ref": "GlueJobScriptRelativePath" },
+                "/",
+                { "Ref": "ProjectName" },  
+                "_",
+                { "Ref": "GlueJobName" },
+                "_ps.py"
+              ]
+            ]
+          }
+        },
+        "DefaultArguments": {
+          "--extra-py-files": {
+            "Fn::Join":[",",[{
+              "Fn::Join": 
+                [
+                  "",
+                  [ 
+                    "s3://",
+                    { "Ref": "BuildBucket" },
+                    "/",
+                    { "Ref": "BuildFolder"},
+                    "/",
+                    { "Ref": "GlueJobScriptRelativePath" },
+                    "/",
+                    { "Ref": "ProjectName" },  
+                    "_",
+                    { "Ref": "GlueJobName" },
+                    "-",
+                    {
+                      "Ref": "EggPackageVersion"
+                    }, 
+                    "-py",
+                    {
+                      "Ref": "PythonVersion"
+                    }, 
+                    ".egg"
+                  ]
+                ]
+            }]]
+          },
+          "--stage": {
+            "Ref": "Stage"
+          },
+          "--project": {
+            "Ref": "ProjectName"
+          }
+        },
+        "MaxCapacity": 1,
+        "ExecutionProperty": {
+          "MaxConcurrentRuns": 1
+        },
+        "MaxRetries": 0,
+        "Name": {
+              "Fn::Join": [
+                "-",
+                [
+                  {
+                    "Ref": "ProjectName"
+                  },
+                  {
+                    "Ref": "GlueJobName"
+                  },
+                  {
+                    "Ref": "Stage"
+                  }
+                ]
+              ]
+            },
+        "Role": {"Ref":"GlueRoleARN"}
+      }
+    }
+  }
+}
